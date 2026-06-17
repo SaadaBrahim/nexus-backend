@@ -2,64 +2,87 @@ require('dotenv').config();
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Inizializziamo Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Rotta di test: verifica connessione al database
-app.get('/test-db', async (req, res) => {
-    const { data, error } = await supabase.from('profiles').select('*');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ message: "Connessione al database riuscita!", data });
-});
-
-// Endpoint per creare un nuovo post (Bookmark)
-app.post('/api/posts', async (req, res) => {
-    const { title, url } = req.body; // Rimosso user_id
-
-    const { data, error } = await supabase
-        .from('posts')
-        .insert([{ title, url }]); // Inviamo solo titolo e URL
-
-    if (error) {
-        console.error("Errore da Supabase:", error);
-        return res.status(500).json({ error: error.message });
-    }
-    res.status(201).json({ message: "Post creato con successo!", data });
-});
-
-// Endpoint per ottenere tutti i post (per il feed)
+// GET: Recupera tutti i post
 app.get('/api/posts', async (req, res) => {
-    const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false }); // Ordina dai più recenti
+    const search = req.query.search || ""; 
+    let query = supabase.from('posts').select('*').order('created_at', { ascending: false });
 
+    if (search.trim() !== "") {
+        query = query.ilike('title', `%${search}%`);
+    }
+
+    const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
 
-app.delete('/api/posts/:id', async (req, res) => {
+// POST: Crea un post con estrazione automatica del titolo
+app.post('/api/posts', async (req, res) => {
+    let { title, url, category } = req.body;
+    
+    if (!url || !url.startsWith('http')) return res.status(400).json({ error: "URL non valido." });
+
+    // Estrazione automatica del titolo se non fornito
+    if (!title || title.trim() === "") {
+        try {
+            const response = await axios.get(url, { timeout: 5000 });
+            const $ = cheerio.load(response.data);
+            title = $('title').text() || "Senza titolo";
+        } catch (e) {
+            title = "Link esterno";
+        }
+    }
+
+    const { data, error } = await supabase.from('posts').insert([{ 
+        title, 
+        url, 
+        category: category || 'Altro', 
+        is_favorite: false 
+    }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json({ message: "Post creato!", data });
+});
+
+// PATCH: Aggiorna lo stato "Preferito" (Stella)
+app.patch('/api/posts/:id/favorite', async (req, res) => {
     const { id } = req.params;
+    const { is_favorite } = req.body;
+
+    // Aggiungi questo log per vedere cosa invii a Supabase
+    console.log("Tentativo update su ID:", id, "con valore:", is_favorite);
 
     const { data, error } = await supabase
         .from('posts')
-        .delete()
-        .eq('id', id); // Cancella solo il post con questo ID
+        .update({ is_favorite: is_favorite })
+        .eq('id', id);
 
     if (error) {
-        console.error("Errore eliminazione:", error);
+        // Stampiamo tutto l'oggetto errore
+        console.error("ERRORE DETTAGLIATO SUPABASE:", JSON.stringify(error, null, 2));
         return res.status(500).json({ error: error.message });
     }
+    
+    console.log("Update riuscito!");
+    res.json({ success: true });
+});
 
-    res.json({ message: "Post eliminato con successo!", data });
+// DELETE: Elimina post
+app.delete('/api/posts/:id', async (req, res) => {
+    const { id } = req.params;
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: "Post eliminato!" });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server attivo sulla porta ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server attivo sulla porta ${PORT}`));

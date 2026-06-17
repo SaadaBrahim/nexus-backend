@@ -6,59 +6,99 @@
 </head>
 <body>
     <h1>I miei Link</h1>
+    <p>Link trovati: <span id="count">0</span></p>
+    
+    <div id="search-box">
+        <input type="text" id="search" placeholder="Cerca tra i link..." onkeyup="loadPosts()">
+    </div>
     
     <div id="add-post">
-        <input type="text" id="title" placeholder="Titolo">
+        <input type="text" id="title" placeholder="Titolo (opzionale)">
         <input type="text" id="url" placeholder="URL (es: https://google.it)">
+        <select id="category">
+            <option value="Lavoro">Lavoro</option>
+            <option value="Studio">Studio</option>
+            <option value="Divertimento">Divertimento</option>
+            <option value="Altro">Altro</option>
+        </select>
         <button onclick="addPost()">Salva Link</button>
     </div>
 
     <ul id="posts-list"></ul>
 
     <script>
-        // Funzione per caricare i post dal server
         async function loadPosts() {
-            const response = await fetch('http://localhost:3000/api/posts');
-            const posts = await response.json();
-            const list = document.getElementById('posts-list');
-            list.innerHTML = ''; 
-            
-            posts.forEach(post => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <a href="${post.url}" target="_blank">${post.title}</a>
-                    <button onclick="deletePost(${post.id})">X</button>
-                `;
-                list.appendChild(li);
-            });
+            try {
+                const searchTerm = document.getElementById('search').value;
+                const response = await fetch(`http://localhost:3000/api/posts?search=${encodeURIComponent(searchTerm)}`);
+                const posts = await response.json();
+                
+                document.getElementById('count').innerText = posts.length;
+                const list = document.getElementById('posts-list');
+                list.innerHTML = ''; 
+                
+                posts.forEach(post => {
+                    const li = document.createElement('li');
+                    li.style = "border: 1px solid #ccc; padding: 10px; margin: 5px; list-style: none; border-radius: 8px;";
+                    
+                    // Assicuriamoci che isFav sia un booleano puro
+                    const isFav = post.is_favorite === true || post.is_favorite === 1; 
+                    
+                    li.innerHTML = `
+                        <strong>${post.title}</strong> - <small>${post.category || 'Altro'}</small><br>
+                        <a href="${post.url}" target="_blank">Vai al sito</a>
+                        <button onclick="toggleFavorite(${post.id}, ${isFav})">${isFav ? '★' : '☆'}</button>
+                        <button onclick="deletePost(${post.id})">Elimina</button>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) { console.error("Errore:", error); }
         }
 
-        // Funzione per eliminare (ORA È FUORI DA LOADPOSTS)
+        async function toggleFavorite(id, currentStatus) {
+            const newStatus = !currentStatus; 
+            console.log("Invio al server ID:", id, "Nuovo stato:", newStatus);
+
+            const response = await fetch(`http://localhost:3000/api/posts/${id}/favorite`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_favorite: newStatus })
+            });
+
+            if (response.ok) {
+                loadPosts();
+            } else {
+                alert("Errore nell'aggiornamento!");
+            }
+        }
+
+        async function addPost() {
+            const title = document.getElementById('title').value;
+            const url = document.getElementById('url').value;
+            const category = document.getElementById('category').value;
+
+            const response = await fetch('http://localhost:3000/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, url, category })
+            });
+
+            if (response.ok) {
+                document.getElementById('title').value = '';
+                document.getElementById('url').value = '';
+                loadPosts();
+            } else {
+                alert("Errore durante il salvataggio.");
+            }
+        }
+
         async function deletePost(id) {
-            if (confirm("Vuoi eliminare questo link?")) {
+            if (confirm("Eliminare questo link?")) {
                 await fetch(`http://localhost:3000/api/posts/${id}`, { method: 'DELETE' });
                 loadPosts();
             }
         }
 
-        // Funzione per inviare un nuovo post al server
-        async function addPost() {
-            const title = document.getElementById('title').value;
-            const url = document.getElementById('url').value;
-
-            await fetch('http://localhost:3000/api/posts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, url })
-            });
-
-            document.getElementById('title').value = '';
-            document.getElementById('url').value = '';
-
-            loadPosts();
-        }
-
-        // Carica i post appena apri la pagina
         loadPosts();
     </script>
 </body>
