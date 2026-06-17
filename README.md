@@ -1,20 +1,20 @@
 # Nexus Link Collector - Backend
 Il cuore pulsante di **Nexus Link Collector**, un'applicazione Full-Stack per la gestione intelligente dei segnalibri. Questo backend gestisce le comunicazioni con il database Supabase, l'estrazione automatica dei metadati dai siti web e la persistenza dei dati.
 
-## 🚀 Funzionalità Principali
+## Funzionalità Principali
 - **Rest API:** Gestione completa (CRUD) dei link tramite endpoint REST.
 - **Scraping Intelligente:** Estrazione automatica del `<title>` dai link salvati tramite `cheerio` e `axios`.
 - **Database Scalabile:** Integrazione con **Supabase** per il salvataggio persistente dei dati.
 - **Sicurezza:** Gestione delle policy RLS (Row Level Security) per un accesso sicuro ai dati.
 - **CORS Enabled:** Configurato per comunicare fluidamente con il frontend.
 
-## 🛠 Tecnologie Utilizzate
+## Tecnologie Utilizzate
 - [Node.js](https://nodejs.org/) - Runtime JavaScript
 - [Express](https://expressjs.com/) - Framework web
 - [Supabase](https://supabase.com/) - Database PostgreSQL come servizio
 - [Axios](https://axios-http.com/) & [Cheerio](https://cheerio.js.org/) - Per lo scraping web
 
-## ⚙️ Configurazione
+## Configurazione
 1. Clona il repository: `git clone [URL_DEL_TUO_REPO]`
 2. Installa le dipendenze: `npm install express @supabase/supabase-js cors axios cheerio dotenv`
 3. Crea un file `.env` nella root del progetto con le seguenti variabili:
