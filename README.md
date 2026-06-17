@@ -57,7 +57,7 @@ PORT=3000
 
 Nota: `SUPABASE_SERVICE_ROLE_KEY` deve restare solo nel backend. Non va mai esposta nel frontend.
 
-## API attuali
+## API attuali e nuove
 
 | Metodo | Endpoint | Descrizione |
 | --- | --- | --- |
@@ -65,6 +65,24 @@ Nota: `SUPABASE_SERVICE_ROLE_KEY` deve restare solo nel backend. Non va mai espo
 | POST | `/api/posts` | Crea un nuovo link ed estrae il titolo automaticamente |
 | PATCH | `/api/posts/:id/favorite` | Aggiorna lo stato preferito |
 | DELETE | `/api/posts/:id` | Elimina un link |
+
+La nuova API multiutente e' disponibile su `/api/links` e richiede:
+
+```text
+Authorization: Bearer <supabase_access_token>
+```
+
+| Metodo | Endpoint | Descrizione |
+| --- | --- | --- |
+| GET | `/api/links` | Lista link dell'utente autenticato con paginazione |
+| POST | `/api/links` | Crea un link in `links` con enrichment metadata |
+| PATCH | `/api/links/:id` | Aggiorna titolo, note, workspace, preferito o archiviato |
+| DELETE | `/api/links/:id` | Elimina un link dell'utente |
+| PUT | `/api/links/:id/tags` | Sostituisce i tag associati a un link |
+| POST | `/api/links/:id/refresh-metadata` | Riestrae i metadati del link |
+| GET/POST/PATCH/DELETE | `/api/workspaces` | Gestione cartelle dell'utente |
+| GET/POST/PATCH/DELETE | `/api/tags` | Gestione tag dell'utente |
+| GET | `/api/health` | Healthcheck del servizio |
 
 ## Database multiutente
 
