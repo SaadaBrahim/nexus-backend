@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus Link Collector</title>
+</head>
+<body>
+    <h1>I miei Link</h1>
+    
+    <div id="add-post">
+        <input type="text" id="title" placeholder="Titolo">
+        <input type="text" id="url" placeholder="URL (es: https://google.it)">
+        <button onclick="addPost()">Salva Link</button>
+    </div>
+
+    <ul id="posts-list"></ul>
+
+    <script>
+        // Funzione per caricare i post dal server
+        async function loadPosts() {
+            const response = await fetch('http://localhost:3000/api/posts');
+            const posts = await response.json();
+            const list = document.getElementById('posts-list');
+            list.innerHTML = ''; // Svuota la lista prima di ricaricare
+            posts.forEach(post => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="${post.url}" target="_blank">${post.title}</a>`;
+                list.appendChild(li);
+            });
+        }
+
+        // Funzione per inviare un nuovo post al server
+async function addPost() {
+    const title = document.getElementById('title').value;
+    const url = document.getElementById('url').value;
+    
+    await fetch('http://localhost:3000/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, url }) // Inviato solo titolo e URL
+    });
+    
+    loadPosts(); 
+} // Carica i post appena apri la pagina
+    </script>
+</body>
+</html>
