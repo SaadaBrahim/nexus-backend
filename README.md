@@ -1,42 +1,81 @@
 # Nexus Link Collector - Backend
-Il cuore pulsante di **Nexus Link Collector**, un'applicazione Full-Stack per la gestione intelligente dei segnalibri. Questo backend gestisce le comunicazioni con il database Supabase, l'estrazione automatica dei metadati dai siti web e la persistenza dei dati.
 
-## Funzionalità Principali
-- **Rest API:** Gestione completa (CRUD) dei link tramite endpoint REST.
-- **Scraping Intelligente:** Estrazione automatica del `<title>` dai link salvati tramite `cheerio` e `axios`.
-- **Database Scalabile:** Integrazione con **Supabase** per il salvataggio persistente dei dati.
-- **Sicurezza:** Gestione delle policy RLS (Row Level Security) per un accesso sicuro ai dati.
-- **CORS Enabled:** Configurato per comunicare fluidamente con il frontend.
+Backend Node.js/Express per la gestione intelligente di link e segnalibri, con persistenza su Supabase/PostgreSQL e arricchimento automatico dei metadati.
 
-## Tecnologie Utilizzate
-- [Node.js](https://nodejs.org/) - Runtime JavaScript
-- [Express](https://expressjs.com/) - Framework web
-- [Supabase](https://supabase.com/) - Database PostgreSQL come servizio
-- [Axios](https://axios-http.com/) & [Cheerio](https://cheerio.js.org/) - Per lo scraping web
+## Funzionalita attuali
 
-## Configurazione
-1. Clona il repository: `git clone [URL_DEL_TUO_REPO]`
-2. Installa le dipendenze: `npm install express @supabase/supabase-js cors axios cheerio dotenv`
-3. Crea un file `.env` nella root del progetto con le seguenti variabili:
+- REST API per CRUD base dei link.
+- Estrazione automatica del titolo tramite `axios` e `cheerio`.
+- Integrazione con Supabase.
+- Frontend statico HTML/CSS/JS.
+
+## Evoluzione in corso
+
+Il progetto sta migrando da prototipo monolitico a piattaforma multiutente sicura:
+
+- Supabase Auth come sistema di autenticazione.
+- RLS per isolamento dati per utente.
+- Nuove tabelle `profiles`, `workspaces`, `links`, `tags`, `link_tags`.
+- Refactoring progressivo verso `routes`, `controllers`, `services`, `middleware`.
+- Smart enrichment con Open Graph, descrizione, immagine e favicon.
+- Rate limiting, validazione input, paginazione e protezioni SSRF.
+
+## Setup
+
+1. Installa le dipendenze:
+
+   ```bash
+   npm install
+   ```
+
+2. Copia `.env.example` in `.env` e inserisci le tue chiavi Supabase.
+
+3. Applica le migrazioni SQL in ordine:
+
    ```text
-   SUPABASE_URL=il_tuo_url_supabase
-   SUPABASE_KEY=la_tua_chiave_anon_pubblica
-   PORT=3000
-Avvia il server: node server.js📡 API EndpointsMetodoEndpointDescrizioneGET/api/postsRecupera tutti i link (con ricerca opzionale)POST/api/postsCrea un nuovo link ed estrae il titolo automaticamentePATCH/api/posts/:id/favoriteAggiorna lo stato "Preferito"DELETE/api/posts/:idElimina un link
----
+   supabase/migrations/20260617170000_core_schema.sql
+   supabase/migrations/20260617170100_rls_policies.sql
+   ```
 
-### Spiegazione del progetto per te
-Per spiegare il progetto a qualcuno (o ricordartelo tra 6 mesi), puoi descriverlo così:
+   La migrazione `20260617170200_optional_legacy_posts_migration.sql` serve solo se vuoi importare i vecchi dati da `public.posts`.
 
-> "Il **Nexus Link Collector** è un'architettura **Client-Server** moderna. Il frontend comunica tramite chiamate asincrone (`fetch`) con un server **Node.js/Express**, che funge da mediatore.
->
-> 1. **La logica di Business:** Il server non si limita a scrivere sul database, ma 'aggiunge valore' recuperando attivamente il titolo delle pagine web tramite scraping (usando `cheerio`), rendendo l'esperienza utente molto più fluida.
-> 2. **L'architettura dei dati:** Abbiamo utilizzato **Supabase (PostgreSQL)**, configurando regole di sicurezza granulari (**RLS**) che garantiscono che ogni operazione di scrittura o lettura rispetti i permessi definiti.
-> 3. **Separazione dei compiti:** Il frontend si occupa solo di ciò che l'utente vede (la UI), lasciando al backend il compito critico di validare gli input e gestire la comunicazione con il database in modo sicuro."
+4. Avvia il server attuale:
 
+   ```bash
+   node server.js
+   ```
 
+## Variabili ambiente
 
-[Image of REST API architecture]
+```text
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+CORS_ORIGIN=http://localhost:3000
+PORT=3000
+```
 
+Nota: `SUPABASE_SERVICE_ROLE_KEY` deve restare solo nel backend. Non va mai esposta nel frontend.
 
-Ti piace questa struttura? È pulita, professionale e spiega esattamente cosa fa il tuo codice senza troppi fronzoli. Se vuoi aggiungere altre sezioni (magari come "Roadmap" per le funzioni future), fammi sapere!
+## API attuali
+
+| Metodo | Endpoint | Descrizione |
+| --- | --- | --- |
+| GET | `/api/posts` | Recupera tutti i link con ricerca opzionale |
+| POST | `/api/posts` | Crea un nuovo link ed estrae il titolo automaticamente |
+| PATCH | `/api/posts/:id/favorite` | Aggiorna lo stato preferito |
+| DELETE | `/api/posts/:id` | Elimina un link |
+
+## Database multiutente
+
+Le nuove migrazioni creano:
+
+- `profiles`: profilo applicativo collegato a `auth.users`.
+- `workspaces`: cartelle personali dell'utente.
+- `links`: nuova tabella principale che sostituisce progressivamente `posts`.
+- `tags`: tag personali.
+- `link_tags`: relazione molti-a-molti tra link e tag.
+
+Il modello di sicurezza usa RLS con policy basate su `auth.uid() = user_id`. I vincoli compositi impediscono di associare link, workspace e tag appartenenti a utenti diversi.
+
+Consulta `supabase/README.md` per l'ordine di applicazione e la migrazione legacy opzionale.
