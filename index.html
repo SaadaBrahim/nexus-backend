@@ -21,27 +21,45 @@
             const response = await fetch('http://localhost:3000/api/posts');
             const posts = await response.json();
             const list = document.getElementById('posts-list');
-            list.innerHTML = ''; // Svuota la lista prima di ricaricare
+            list.innerHTML = ''; 
+            
             posts.forEach(post => {
                 const li = document.createElement('li');
-                li.innerHTML = `<a href="${post.url}" target="_blank">${post.title}</a>`;
+                li.innerHTML = `
+                    <a href="${post.url}" target="_blank">${post.title}</a>
+                    <button onclick="deletePost(${post.id})">X</button>
+                `;
                 list.appendChild(li);
             });
         }
 
+        // Funzione per eliminare (ORA È FUORI DA LOADPOSTS)
+        async function deletePost(id) {
+            if (confirm("Vuoi eliminare questo link?")) {
+                await fetch(`http://localhost:3000/api/posts/${id}`, { method: 'DELETE' });
+                loadPosts();
+            }
+        }
+
         // Funzione per inviare un nuovo post al server
-async function addPost() {
-    const title = document.getElementById('title').value;
-    const url = document.getElementById('url').value;
-    
-    await fetch('http://localhost:3000/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, url }) // Inviato solo titolo e URL
-    });
-    
-    loadPosts(); 
-} // Carica i post appena apri la pagina
+        async function addPost() {
+            const title = document.getElementById('title').value;
+            const url = document.getElementById('url').value;
+
+            await fetch('http://localhost:3000/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, url })
+            });
+
+            document.getElementById('title').value = '';
+            document.getElementById('url').value = '';
+
+            loadPosts();
+        }
+
+        // Carica i post appena apri la pagina
+        loadPosts();
     </script>
 </body>
 </html>

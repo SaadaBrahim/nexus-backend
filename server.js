@@ -43,6 +43,22 @@ app.get('/api/posts', async (req, res) => {
     res.json(data);
 });
 
+app.delete('/api/posts/:id', async (req, res) => {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', id); // Cancella solo il post con questo ID
+
+    if (error) {
+        console.error("Errore eliminazione:", error);
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: "Post eliminato con successo!", data });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server attivo sulla porta ${PORT}`);
